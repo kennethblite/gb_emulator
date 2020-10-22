@@ -75,7 +75,7 @@ func main() {
 	}
 
 	for i,v := range table.Unprefixed{
-		if strings.Contains(v.Name,"AND "){ //&& strings.Contains(v.Name, "u16") {//|| strings.Contains(v.Name, "DEC"){
+		if strings.Contains(v.Name,"A,u8"){ //&& strings.Contains(v.Name, "u16") {//|| strings.Contains(v.Name, "DEC"){
 				fmt.Printf("%08b: %s\n",i,v.Name)
 		}
 	}

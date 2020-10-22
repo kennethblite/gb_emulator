@@ -26,9 +26,9 @@ func PrintRegs() {
 }
 func main() {
 	fmt.Println("hello World")
-	for i := 0; i < 0xffffff; i++{
-	INC8{}.Execute(byte(0x4))
-	//PrintRegs()
+	for i := 0; i < 0xffffff; i++ {
+		INC8{}.Execute(byte(0x4))
+		//PrintRegs()
 	}
 	//}
 }
@@ -179,6 +179,30 @@ func (a ADD8) Execute(b ...byte) {
 	PC++
 }
 
+type ADDu8 struct{}
+
+func (a ADDu8) Execute(b ...byte) {
+	dst := get_reg8(0x7) //A
+	src := hreg(b[1])
+	dst_tmp := dst
+	dst += src
+	set_reg8(0x7, dst)
+	if dst == 0 {
+		set_flagbit(ZERO)
+	} else {
+		unset_flagbit(ZERO)
+	}
+	if dst_tmp > dst {
+		set_flagbit(CARRY)
+		set_flagbit(HCARRY)
+	} else {
+		unset_flagbit(CARRY)
+		unset_flagbit(HCARRY)
+	}
+	unset_flagbit(NEG)
+	PC = PC + 2
+}
+
 type ADC8 struct {
 }
 
@@ -201,7 +225,32 @@ func (a ADC8) Execute(b ...byte) {
 		unset_flagbit(HCARRY)
 	}
 	unset_flagbit(NEG)
-	PC++
+	PC += 2
+}
+
+type ADCu8 struct {
+}
+
+func (a ADCu8) Execute(b ...byte) {
+	dst := get_reg8(0x7) //A
+	src := hreg(b[1])
+	dst_tmp := dst
+	dst += src + hreg(get_flagbit(HCARRY))
+	set_reg8(0x7, dst)
+	if dst == 0 {
+		set_flagbit(ZERO)
+	} else {
+		unset_flagbit(ZERO)
+	}
+	if dst_tmp < dst {
+		set_flagbit(CARRY)
+		set_flagbit(HCARRY)
+	} else {
+		unset_flagbit(CARRY)
+		unset_flagbit(HCARRY)
+	}
+	unset_flagbit(NEG)
+	PC += 2
 }
 
 type SUB8 struct{}
@@ -228,6 +277,30 @@ func (s SUB8) Execute(b ...byte) {
 	PC++
 }
 
+type SUBu8 struct{}
+
+func (s SUBu8) Execute(b ...byte) {
+	dst := get_reg8(0x7) //A
+	src := hreg(b[1])
+	dst_tmp := dst
+	dst -= src
+	set_reg8(0x7, dst)
+	if dst == 0 {
+		set_flagbit(ZERO)
+	} else {
+		unset_flagbit(ZERO)
+	}
+	if dst_tmp < dst {
+		set_flagbit(CARRY)
+		set_flagbit(HCARRY)
+	} else {
+		unset_flagbit(CARRY)
+		unset_flagbit(HCARRY)
+	}
+	set_flagbit(NEG)
+	PC += 2
+}
+
 type SBC8 struct{}
 
 func (s SBC8) Execute(b ...byte) {
@@ -252,13 +325,37 @@ func (s SBC8) Execute(b ...byte) {
 	PC++
 }
 
-type AND8 struct{
+type SBCu8 struct{}
+
+func (s SBCu8) Execute(b ...byte) {
+	dst := get_reg8(0x7) //A
+	src := hreg(b[1])
+	dst_tmp := dst
+	dst -= src + hreg(get_flagbit(HCARRY))
+	set_reg8(0x7, dst)
+	if dst == 0 {
+		set_flagbit(ZERO)
+	} else {
+		unset_flagbit(ZERO)
+	}
+	if dst_tmp > dst {
+		set_flagbit(CARRY)
+		set_flagbit(HCARRY)
+	} else {
+		unset_flagbit(CARRY)
+		unset_flagbit(HCARRY)
+	}
+	set_flagbit(NEG)
+	PC += 2
+}
+
+type AND8 struct {
 }
 
 func (a AND8) Execute(b ...byte) {
 	dst := get_reg8(0x7) //A
 	src := get_reg8(b[0] & 0x7)
-	dst =  dst&src
+	dst = dst & src
 	set_reg8(0x7, dst)
 	if dst == 0 {
 		set_flagbit(ZERO)
@@ -271,11 +368,31 @@ func (a AND8) Execute(b ...byte) {
 	PC++
 }
 
+type ANDu8 struct {
+}
+
+func (a ANDu8) Execute(b ...byte) {
+	dst := get_reg8(0x7) //A
+	src := hreg(b[1])
+	dst = dst & src
+	set_reg8(0x7, dst)
+	if dst == 0 {
+		set_flagbit(ZERO)
+	} else {
+		unset_flagbit(ZERO)
+	}
+	set_flagbit(HCARRY)
+	unset_flagbit(CARRY)
+	unset_flagbit(NEG)
+	PC += 2
+}
+
 type XOR8 struct{}
-func (x XOR8) Execute(b ...byte){
+
+func (x XOR8) Execute(b ...byte) {
 	dst := get_reg8(0x7) //A
 	src := get_reg8(b[0] & 0x7)
-	dst =  dst^src
+	dst = dst ^ src
 	set_reg8(0x7, dst)
 	if dst == 0 {
 		set_flagbit(ZERO)
@@ -286,13 +403,32 @@ func (x XOR8) Execute(b ...byte){
 	unset_flagbit(CARRY)
 	unset_flagbit(NEG)
 	PC++
+}
+
+type XORu8 struct{}
+
+func (x XORu8) Execute(b ...byte) {
+	dst := get_reg8(0x7) //A
+	src := hreg(b[1])
+	dst = dst ^ src
+	set_reg8(0x7, dst)
+	if dst == 0 {
+		set_flagbit(ZERO)
+	} else {
+		unset_flagbit(ZERO)
+	}
+	unset_flagbit(HCARRY)
+	unset_flagbit(CARRY)
+	unset_flagbit(NEG)
+	PC += 2
 }
 
 type OR8 struct{}
-func (o OR8) Execute(b ...byte){
+
+func (o OR8) Execute(b ...byte) {
 	dst := get_reg8(0x7) //A
 	src := get_reg8(b[0] & 0x7)
-	dst =  dst|src
+	dst = dst | src
 	set_reg8(0x7, dst)
 	if dst == 0 {
 		set_flagbit(ZERO)
@@ -305,8 +441,27 @@ func (o OR8) Execute(b ...byte){
 	PC++
 }
 
+type ORu8 struct{}
+
+func (o ORu8) Execute(b ...byte) {
+	dst := get_reg8(0x7) //A
+	src := hreg(b[1])
+	dst = dst | src
+	set_reg8(0x7, dst)
+	if dst == 0 {
+		set_flagbit(ZERO)
+	} else {
+		unset_flagbit(ZERO)
+	}
+	unset_flagbit(HCARRY)
+	unset_flagbit(CARRY)
+	unset_flagbit(NEG)
+	PC += 2
+}
+
 type CP8 struct{}
-func (c CP8) Execute(b ...byte){
+
+func (c CP8) Execute(b ...byte) {
 	dst := get_reg8(0x7) //A
 	src := get_reg8(b[0] & 0x7)
 	dst_tmp := dst
@@ -328,7 +483,200 @@ func (c CP8) Execute(b ...byte){
 	PC++
 }
 
-func set_statusflags() {
+type CPu8 struct{}
+
+func (c CPu8) Execute(b ...byte) {
+	dst := get_reg8(0x7) //A
+	src := hreg(b[1])
+	dst_tmp := dst
+	dst -= src
+	//set_reg8(0x7, dst)
+	if dst == 0 {
+		set_flagbit(ZERO)
+	} else {
+		unset_flagbit(ZERO)
+	}
+	if dst_tmp < dst {
+		set_flagbit(CARRY)
+		set_flagbit(HCARRY)
+	} else {
+		unset_flagbit(CARRY)
+		unset_flagbit(HCARRY)
+	}
+	set_flagbit(NEG)
+	PC += 2
+}
+
+type PUSH struct{}
+
+func (p PUSH) Execute(b ...byte) {
+	val := reg(0)
+	if (b[0]&0x30)>>4 != 0x3 {
+		val = get_reg16((b[0] & 0x30) >> 4)
+	} else {
+		val = AF
+	}
+	SP.Set_Word(val)
+	SP = SP - 2
+	PC++
+}
+
+type POP struct{}
+
+func (p POP) Execute(b ...byte) {
+	val := SP.Get_Word()
+	SP = SP + 2
+	if (b[0]&0x30)>>4 != 0x3 {
+		set_reg16((b[0]&0x30)>>4, val)
+	} else {
+		AF = val
+	}
+	PC++
+}
+
+type CALL struct{}
+
+func (c CALL) Execute(b ...byte) {
+	if b[0]&1 == 1 || jmp_on_flag((b[0]&0x18)>>3) {
+		SP.Set_Word(PC + 3)
+		PC = reg(b[1])<<8 + reg(b[2])
+	} else {
+		PC = PC + 3
+	}
+}
+
+type JP struct{}
+
+func (j JP) Execute(b ...byte) {
+	if b[0]&0x21 == 0x21 {
+		PC = HL
+	} else if b[0]&0x21 == 0x1 || jmp_on_flag((b[0]&0x18)>>3) {
+		PC = reg(b[1])<<8 + reg(b[2])
+	} else {
+		PC = PC + 3
+	}
+}
+
+type JR struct{}
+
+func (j JR) Execute(b ...byte) {
+	if b[0]&0x20 == 0x0 || jmp_on_flag((b[0] & 0x18)) {
+		if int8(b[1]) < 0 {
+			PC -= reg((b[1] ^ 0xff) + 1)
+		} else {
+			PC += reg(b[1])
+		}
+	} else {
+		PC += 2
+	}
+}
+
+type RET struct{}
+
+func (r RET) Execute(b ...byte) {
+	if b[0]&0x1 == 1 || jmp_on_flag(b[0]&0x18) {
+		PC = SP.Get_Word()
+		SP = SP + 2
+	} else {
+		PC++
+	}
+}
+
+type RETI struct{}
+
+func (r RETI) Execute(b ...byte) {
+	panic("NOT IMPLEMENTED")
+}
+
+type RCCA struct{}
+
+func (r RCCA) Execute(b ...byte) {
+	a := get_reg8(0x7)
+	c := a & 0x1
+	a = (a >> 1) + c<<7
+	set_reg8(0x7, a)
+	unset_flagbit(ZERO)
+	unset_flagbit(NEG)
+	unset_flagbit(HCARRY)
+	if c == 0 {
+		unset_flagbit(CARRY)
+	} else {
+		set_flagbit(CARRY)
+	}
+	PC++
+}
+
+type RRA struct{}
+
+func (r RRA) Execute(b ...byte) {
+	c := hreg(get_flagbit(CARRY))
+	a := get_reg8(0x7)
+	c_new := a & 0x1
+	a = (a >> 1) + c<<7
+	set_reg8(0x7, a)
+	unset_flagbit(ZERO)
+	unset_flagbit(NEG)
+	unset_flagbit(HCARRY)
+	if c_new == 0 {
+		unset_flagbit(CARRY)
+	} else {
+		set_flagbit(CARRY)
+	}
+	PC++
+
+}
+
+type RLCA struct{}
+
+func (r RLCA) Execute(b ...byte) {
+	a := get_reg8(0x7)
+	c := (a & 0x80) >> 7
+	a = (a << 1) + c
+	set_reg8(0x7, a)
+	unset_flagbit(ZERO)
+	unset_flagbit(NEG)
+	unset_flagbit(HCARRY)
+	if c == 0 {
+		unset_flagbit(CARRY)
+	} else {
+		set_flagbit(CARRY)
+	}
+	PC++
+}
+
+type RLA struct{}
+
+func (r RLA) Execute(b ...byte) {
+	c := hreg(get_flagbit(CARRY))
+	a := get_reg8(0x7)
+	c_new := (a & 0x80) >> 7
+	a = (a << 1) + c
+	set_reg8(0x7, a)
+	unset_flagbit(ZERO)
+	unset_flagbit(NEG)
+	unset_flagbit(HCARRY)
+	if c_new == 0 {
+		unset_flagbit(CARRY)
+	} else {
+		set_flagbit(CARRY)
+	}
+	PC++
+
+}
+
+func jmp_on_flag(index uint8) bool {
+	switch index {
+	case 0:
+		return !is_flagbit(ZERO)
+	case 1:
+		return is_flagbit(ZERO)
+	case 2:
+		return !is_flagbit(CARRY)
+	case 3:
+		return is_flagbit(CARRY)
+	default:
+		panic("JMP ON FLAG PANIC")
+	}
 
 }
 
@@ -397,6 +745,10 @@ func get_flagbit(i uint8) uint8 {
 	return 0
 }
 
+func is_flagbit(i uint8) bool {
+	return get_flagbit(i) == 1
+}
+
 func get_flag() hreg {
 	return hreg(AF & 0xff)
 }
@@ -434,6 +786,14 @@ func set_reg16(index uint8, val reg) {
 func (r reg) Get_Byte() hreg {
 	return hreg(memory[int(r)])
 }
+func (r reg) Get_Word() reg {
+	val := reg(memory[int(r)])<<8 + reg(memory[int(r)+1])
+	return val
+}
 func (r reg) Set_Byte(a hreg) {
 	memory[int(r)] = byte(a)
+}
+func (r reg) Set_Word(a reg) {
+	memory[int(r)] = byte((a & 0xff00) >> 8)
+	memory[int(r)+1] = byte((a & 0xff))
 }
