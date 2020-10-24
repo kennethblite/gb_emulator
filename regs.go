@@ -516,8 +516,8 @@ func (p PUSH) Execute(b ...byte) {
 	} else {
 		val = AF
 	}
-	SP.Set_Word(val)
 	SP = SP - 2
+	SP.Set_Word(val)
 	PC++
 }
 
@@ -538,6 +538,7 @@ type CALL struct{}
 
 func (c CALL) Execute(b ...byte) {
 	if b[0]&1 == 1 || jmp_on_flag((b[0]&0x18)>>3) {
+		SP = SP - 2
 		SP.Set_Word(PC + 3)
 		PC = reg(b[1])<<8 + reg(b[2])
 	} else {
@@ -573,6 +574,7 @@ func (j JR) Execute(b ...byte) {
 
 type RET struct{}
 
+// This handles all return types except for RETI, which will implemented later after the emulation period.
 func (r RET) Execute(b ...byte) {
 	if b[0]&0x1 == 1 || jmp_on_flag(b[0]&0x18) {
 		PC = SP.Get_Word()
@@ -662,6 +664,98 @@ func (r RLA) Execute(b ...byte) {
 	}
 	PC++
 
+}
+
+type HALT struct{}
+
+func (h HALT) Execute(b ...byte) {
+	panic("NOT IMPLEMENTED YET")
+}
+
+type DAA struct{}
+
+func (d DAA) Execute(b ...byte) {
+	a := get_reg8(0x7)
+	if !is_flagbit(NEG) { // after an addition, adjust if (half-)carry occurred or if result is out of bounds
+		if is_flagbit(CARRY) || a > 0x99 {
+			a += 0x60
+		}
+		if is_flagbit(HCARRY) || (a&0x0f) > 0x09 {
+			a += 0x6
+		}
+	} else { // after a subtraction, only adjust if (half-)carry occurred
+		if is_flagbit(CARRY) {
+			a -= 0x60
+		}
+		if is_flagbit(HCARRY) {
+			a -= 0x6
+		}
+	}
+	set_reg8(0x7, a)
+	set_flagbit(CARRY)
+	set_flagbit(NEG)
+	PC++
+}
+
+type CPL struct{}
+
+func (c CPL) Execute(b ...byte) {
+	a := get_reg8(0x7)
+	a = a ^ 0xff
+	set_reg8(0x7, a)
+	set_flagbit(HCARRY)
+	set_flagbit(NEG)
+	PC++
+}
+
+type SCF struct{}
+
+func (s SCF) Execute(b ...byte) {
+	set_flagbit(CARRY)
+	unset_flagbit(NEG)
+	unset_flagbit(HCARRY)
+	PC++
+}
+
+type CCF struct{}
+
+func (c CCF) Execute(b ...byte) {
+	if is_flagbit(CARRY) {
+		unset_flagbit(CARRY)
+	} else {
+		set_flagbit(CARRY)
+	}
+	unset_flagbit(NEG)
+	unset_flagbit(HCARRY)
+	PC++
+}
+
+type RST struct{}
+
+//This is basically the same as CALL except just one byte, and a few locations
+func (r RST) Execute(b ...byte) {
+	addr := reg(b[0] & 0x38)
+	SP.Set_Word(PC + 1)
+	SP = SP - 2
+	PC = addr
+}
+
+type DI struct{}
+
+func (d DI) Execute(b ...byte) {
+	panic("SHOULD DISABLE INTERRUPTS")
+}
+
+type STOP struct{}
+
+func (s STOP) Execute(b ...byte) {
+	panic("STOP")
+}
+
+type EI struct{}
+
+func (e EI) Execute(b ...byte) {
+	panic("SHOULD ENABLE INTERRUPTS")
 }
 
 func jmp_on_flag(index uint8) bool {

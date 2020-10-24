@@ -11,6 +11,7 @@ import (
 )
 
 // Table : https://raw.githubusercontent.com/izik1/gbops/master/dmgops.json
+// Special thanks to TotalJustice for this xml script.
 type Table struct {
 	Unprefixed []struct {
 		Name            string `json:"Name"`
@@ -75,9 +76,9 @@ func main() {
 	}
 
 	for i,v := range table.Unprefixed{
-		if strings.Contains(v.Name,"A,u8"){ //&& strings.Contains(v.Name, "u16") {//|| strings.Contains(v.Name, "DEC"){
+			if strings.Contains(v.Name, "RST"){
 				fmt.Printf("%08b: %s\n",i,v.Name)
-		}
+			}
 	}
 	// ayyyyyy
 	println("done!")
